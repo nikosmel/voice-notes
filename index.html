@@ -67,13 +67,30 @@
   #toastMsg{white-space:nowrap}
   #toast button{border:0;background:none;color:var(--accent);font-weight:600;padding:4px 0;display:none}
   #toast.has-action button{display:block}
+  .hbtns{display:flex;gap:10px}
+  dialog{border:0;border-radius:18px;padding:20px;width:min(92vw,420px);background:var(--card);color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  dialog::backdrop{background:rgba(0,0,0,.45)}
+  dialog h2{margin:0 0 6px;font-size:20px}
+  dialog .hint{margin:0 0 12px;font-size:14px;color:var(--muted)}
+  #importText{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,system-ui,sans-serif}
+  .preview{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;max-height:40vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+  .preview:empty{display:none}
+  .drow{display:flex;gap:10px;margin-top:14px}
+  .drow button{flex:1;height:46px;border-radius:12px;border:1px solid var(--border);background:var(--card)}
+  .drow .primary{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600}
+  .drow .primary:disabled{opacity:.35}
+  .drow button:focus:not(:focus-visible){outline:none}
+  #importErr{color:#d63c3c;font-size:14px;margin:8px 0 0;display:none}
 </style>
 </head>
 <body>
 <header>
   <div class="top">
     <h1>Σημειώσεις</h1>
-    <button class="ghost" id="export">Εξαγωγή</button>
+    <div class="hbtns">
+      <button class="ghost" id="importOpen">Εισαγωγή</button>
+      <button class="ghost" id="export">Εξαγωγή</button>
+    </div>
   </div>
   <input id="search" type="search" placeholder="Αναζήτηση…" autocomplete="off">
   <div id="chips"></div>
@@ -98,6 +115,19 @@
 
 <div id="toast"><span id="toastMsg"></span><button id="toastBtn">Αναίρεση</button></div>
 
+<dialog id="importDlg">
+  <h2>Εισαγωγή σημείωσης</h2>
+  <p class="hint" id="importHint">Επικόλλησε το link που σου έστειλαν από το άλλο κινητό.</p>
+  <textarea id="importText" placeholder="https://…/voice-notes/#n=…"></textarea>
+  <div class="preview" id="importPreview"></div>
+  <p id="importErr">Δεν βρέθηκε σημείωση σε αυτό το κείμενο.</p>
+  <div class="drow">
+    <button id="importPaste">Επικόλληση</button>
+    <button id="importCancel">Άκυρο</button>
+    <button class="primary" id="importDo" disabled>Εισαγωγή</button>
+  </div>
+</dialog>
+
 <script>
 const KEY = 'voice-notes-v1';
 const $ = id => document.getElementById(id);
@@ -106,6 +136,7 @@ const list = $('list'), draft = $('draft'), mic = $('mic'), save = $('save'), se
 const ICON = {
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"/></svg>',
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="5" rx="1"/><path d="m4 15 1.5 1.5L8 14"/><path d="M12 6.5h9M12 15.5h9"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>',
   del: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>'
 };
 
@@ -147,6 +178,7 @@ function noteHtml(n){
     <div class="meta"><time>${fmt.format(n.updated)}</time>
       <button class="act${n.pinned ? ' on' : ''}" data-act="pin" aria-label="Καρφίτσωμα">${ICON.pin}</button>
       <button class="act${n.items ? ' on' : ''}" data-act="list" aria-label="Λίστα ελέγχου">${ICON.list}</button>
+      <button class="act" data-act="share" aria-label="Αποστολή">${ICON.share}</button>
       <button class="act" data-act="del" aria-label="Διαγραφή">${ICON.del}</button>
     </div></div>`;
 }
@@ -212,6 +244,7 @@ list.onclick = e => {
     persist(); render(); return;
   }
   if (act === 'del') { removeNote(n); return; }
+  if (act === 'share') { shareNote(n); return; }
   if (e.target.closest('.meta')) return;
 
   editingId = n.id; draft.value = noteText(n); setListMode(!!n.items);
@@ -247,6 +280,82 @@ $('export').onclick = async () => {
     else { await navigator.clipboard.writeText(text); toast('Αντιγράφηκαν στο πρόχειρο'); }
   } catch {}
 };
+
+/* ---------- Αποστολή / εισαγωγή μίας σημείωσης ---------- */
+// Η σημείωση μπαίνει στο link: …/voice-notes/#n=<base64url(JSON)>. Δεν περνάει από κανέναν server.
+const APP_URL = location.origin + location.pathname;
+const b64enc = s => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0)));
+
+function encodeNote(n){
+  const p = { v: 1, t: n.text };
+  if (n.items) p.i = n.items.map(i => [i.t, i.done ? 1 : 0]);
+  return `${APP_URL}#n=${b64enc(JSON.stringify(p))}`;
+}
+function decodeNote(str){
+  const m = String(str).match(/#n=([A-Za-z0-9_-]+)/);
+  if (!m) return null;
+  try {
+    const p = JSON.parse(b64dec(m[1]));
+    if (typeof p.t !== 'string' || !p.t.trim()) return null;
+    const items = Array.isArray(p.i) ? p.i.map(([t, d]) => ({ t: String(t), done: !!d })) : null;
+    return { text: p.t, items };
+  } catch { return null; }
+}
+
+async function shareNote(n){
+  const link = encodeNote(n);
+  const preview = noteText(n).split('\n')[0].slice(0, 60);
+  try {
+    if (navigator.share) await navigator.share({ title: 'Σημείωση', text: `📝 ${preview}\nΆνοιξε το link για εισαγωγή:`, url: link });
+    else { await navigator.clipboard.writeText(link); toast('Το link αντιγράφηκε'); }
+  } catch (e) {
+    if (e.name !== 'AbortError') { try { await navigator.clipboard.writeText(link); toast('Το link αντιγράφηκε'); } catch {} }
+  }
+}
+
+const dlg = $('importDlg'), importText = $('importText'), importPreview = $('importPreview'), importDo = $('importDo'), importErr = $('importErr');
+let pending = null;
+
+function updateImport(){
+  pending = decodeNote(importText.value);
+  importPreview.textContent = pending ? (pending.items ? pending.items.map(i => `${i.done ? '☑' : '☐'} ${i.t}`).join('\n') : pending.text) : '';
+  importErr.style.display = importText.value.trim() && !pending ? 'block' : 'none';
+  importDo.disabled = !pending;
+}
+function openImport(value = ''){
+  importText.value = value;
+  importText.style.display = value ? 'none' : '';
+  $('importPaste').style.display = value ? 'none' : '';
+  $('importHint').textContent = value ? 'Θες να προσθέσεις αυτή τη σημείωση;' : 'Επικόλλησε το link που σου έστειλαν από το άλλο κινητό.';
+  updateImport();
+  dlg.showModal();
+}
+
+importText.oninput = updateImport;
+$('importOpen').onclick = () => openImport();
+$('importCancel').onclick = () => dlg.close();
+$('importPaste').onclick = async () => {
+  try { importText.value = await navigator.clipboard.readText(); updateImport(); }
+  catch { importText.focus(); toast('Πάτα παρατεταμένα στο πλαίσιο → Επικόλληση'); }
+};
+importDo.onclick = () => {
+  if (!pending) return;
+  const now = Date.now();
+  notes.push({ id: crypto.randomUUID?.() || String(now), text: pending.text, items: pending.items, pinned: false, created: now, updated: now });
+  persist(); dlg.close(); activeTag = null; search.value = ''; render();
+  toast('Η σημείωση προστέθηκε');
+};
+dlg.addEventListener('close', () => { pending = null; });
+
+// Αν η σελίδα άνοιξε από link με σημείωση
+function checkHash(){
+  if (!location.hash.startsWith('#n=')) return;
+  const h = location.hash;
+  history.replaceState(null, '', APP_URL);
+  if (decodeNote(h)) openImport(h); else toast('Το link δεν περιέχει έγκυρη σημείωση');
+}
+addEventListener('hashchange', checkHash);
 
 /* ---------- Υπαγόρευση ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -290,7 +399,7 @@ function toast(msg, action, ms = 2800){
 $('toastBtn').onclick = () => { const a = toastAction; toastAction = null; clearTimeout(tt); $('toast').classList.remove('show'); a?.(); };
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-render(); autosize();
+render(); autosize(); checkHash();
 </script>
 </body>
 </html>
