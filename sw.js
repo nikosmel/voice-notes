@@ -1,4 +1,4 @@
-const CACHE = 'voice-notes-v1';
+const CACHE = 'voice-notes-v2';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

@@ -13,21 +13,40 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Σημειώσεις</title>
 <style>
-  :root{--bg:#f6f5f2;--card:#fff;--text:#1b1c1f;--muted:#6b6f76;--accent:#d9480f;--border:#e4e2dc}
-  @media (prefers-color-scheme:dark){:root{--bg:#111318;--card:#1b1e25;--text:#eceef2;--muted:#8b919c;--accent:#ff7a3d;--border:#2a2e37}}
+  :root{--bg:#f6f5f2;--card:#fff;--text:#1b1c1f;--muted:#6b6f76;--accent:#d9480f;--accent-soft:#fbe4d8;--border:#e4e2dc}
+  @media (prefers-color-scheme:dark){:root{--bg:#111318;--card:#1b1e25;--text:#eceef2;--muted:#8b919c;--accent:#ff7a3d;--accent-soft:#3a2418;--border:#2a2e37}}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--bg);color:var(--text);font:17px/1.45 -apple-system,system-ui,sans-serif}
   body{min-height:100dvh;display:flex;flex-direction:column}
-  header{position:sticky;top:0;z-index:2;background:var(--bg);padding:calc(env(safe-area-inset-top) + 12px) 16px 10px}
+  button{font:inherit;color:inherit;cursor:pointer}
+  header{position:sticky;top:0;z-index:2;background:var(--bg);padding:calc(env(safe-area-inset-top) + 12px) 16px 8px}
   .top{display:flex;align-items:center;justify-content:space-between}
   h1{font-size:30px;margin:0;letter-spacing:-.5px}
-  .ghost{background:none;border:0;color:var(--accent);font:inherit;padding:6px 4px}
+  .ghost{background:none;border:0;color:var(--accent);padding:6px 4px}
   #search{width:100%;margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit}
+  #chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+  #chips::-webkit-scrollbar{display:none}
+  #chips:empty{display:none}
+  .chip{flex:none;border:1px solid var(--border);background:var(--card);border-radius:999px;padding:5px 12px;font-size:15px}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
   main{flex:1;padding:4px 16px 16px}
-  .note{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px;position:relative}
-  .note p{margin:0 30px 6px 0;white-space:pre-wrap;overflow-wrap:anywhere}
-  .note time{font-size:13px;color:var(--muted)}
-  .del{position:absolute;top:4px;right:4px;border:0;background:none;color:var(--muted);font-size:22px;line-height:1;padding:8px 10px}
+  .section{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:14px 2px 8px}
+  .note{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px 6px;margin-bottom:10px}
+  .note.pinned{border-color:var(--accent)}
+  .note p{margin:0 0 4px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .tag{color:var(--accent);font-weight:500}
+  .items{list-style:none;margin:0 0 4px;padding:0}
+  .items li{display:flex;align-items:flex-start;gap:10px;padding:5px 0}
+  .items li.done span{text-decoration:line-through;color:var(--muted)}
+  .check{flex:none;width:22px;height:22px;margin-top:1px;border-radius:6px;border:2px solid var(--muted);background:none;padding:0;display:grid;place-items:center}
+  .done .check{background:var(--accent);border-color:var(--accent)}
+  .done .check::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:translate(0,-1px) rotate(45deg)}
+  .progress{font-size:13px;color:var(--muted)}
+  .meta{display:flex;align-items:center;gap:2px}
+  .meta time{flex:1;font-size:13px;color:var(--muted)}
+  .act{border:0;background:none;color:var(--muted);padding:8px;display:grid;place-items:center;border-radius:8px}
+  .act.on{color:var(--accent)}
+  .act svg{width:19px;height:19px}
   .empty{color:var(--muted);text-align:center;margin-top:48px}
   footer{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:10px 16px calc(env(safe-area-inset-bottom) + 10px)}
   #draft{display:block;width:100%;min-height:52px;max-height:40vh;resize:none;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit}
@@ -35,12 +54,19 @@
   #mic{width:56px;height:56px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
   #mic.on{animation:pulse 1.2s infinite}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,122,61,.55)}100%{box-shadow:0 0 0 18px rgba(255,122,61,0)}}
-  #save{flex:1;height:52px;border-radius:12px;border:0;background:var(--text);color:var(--bg);font:600 17px -apple-system,system-ui,sans-serif}
+  #listMode{flex:none;height:52px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;gap:6px;font-size:15px}
+  #listMode.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  #listMode svg{width:18px;height:18px}
+  #save{flex:1;height:52px;border-radius:12px;border:0;background:var(--text);color:var(--bg);font-weight:600}
   #save:disabled{opacity:.35}
   #cancel{display:none}
   body.editing #cancel{display:inline-block}
-  #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 150px);transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:15px;max-width:88vw;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
+  #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 150px);transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 14px;border-radius:12px;font-size:15px;max-width:88vw;display:flex;align-items:center;gap:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:5}
   #toast.show{opacity:1}
+  #toast.show.has-action{pointer-events:auto}
+  #toastMsg{white-space:nowrap}
+  #toast button{border:0;background:none;color:var(--accent);font-weight:600;padding:4px 0;display:none}
+  #toast.has-action button{display:block}
 </style>
 </head>
 <body>
@@ -50,6 +76,7 @@
     <button class="ghost" id="export">Εξαγωγή</button>
   </div>
   <input id="search" type="search" placeholder="Αναζήτηση…" autocomplete="off">
+  <div id="chips"></div>
 </header>
 
 <main id="list"></main>
@@ -60,20 +87,32 @@
     <button id="mic" aria-label="Υπαγόρευση">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
     </button>
+    <button id="listMode" aria-pressed="false" aria-label="Λίστα ελέγχου">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="5" rx="1"/><path d="m4 15 1.5 1.5L8 14"/><path d="M12 6.5h9M12 15.5h9"/></svg>
+      Λίστα
+    </button>
     <button id="save" disabled>Αποθήκευση</button>
     <button class="ghost" id="cancel">Άκυρο</button>
   </div>
 </footer>
 
-<div id="toast"></div>
+<div id="toast"><span id="toastMsg"></span><button id="toastBtn">Αναίρεση</button></div>
 
 <script>
 const KEY = 'voice-notes-v1';
 const $ = id => document.getElementById(id);
-const list = $('list'), draft = $('draft'), mic = $('mic'), save = $('save'), search = $('search');
+const list = $('list'), draft = $('draft'), mic = $('mic'), save = $('save'), search = $('search'), chips = $('chips'), listModeBtn = $('listMode');
+
+const ICON = {
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="5" rx="1"/><path d="m4 15 1.5 1.5L8 14"/><path d="M12 6.5h9M12 15.5h9"/></svg>',
+  del: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>'
+};
 
 let notes = load();
 let editingId = null;
+let activeTag = null;
+let listMode = false;
 
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } }
 function persist(){ try { localStorage.setItem(KEY, JSON.stringify(notes)); } catch { toast('Δεν ήταν δυνατή η αποθήκευση'); } }
@@ -81,46 +120,117 @@ navigator.storage?.persist?.();
 
 const fmt = new Intl.DateTimeFormat('el-GR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 
-function render(){
-  const q = norm(search.value.trim());
-  const shown = notes.filter(n => !q || norm(n.text).includes(q)).sort((a,b) => b.updated - a.updated);
-  list.innerHTML = shown.length
-    ? shown.map(n => `<div class="note" data-id="${n.id}"><p>${esc(n.text)}</p><time>${fmt.format(n.updated)}</time><button class="del" aria-label="Διαγραφή">×</button></div>`).join('')
-    : `<div class="empty">${q ? 'Δεν βρέθηκε τίποτα' : 'Καμία σημείωση ακόμα'}</div>`;
+/* ---------- Ετικέτες ---------- */
+const TAG_RE = /#([\p{L}\p{N}_]+)/gu;
+// Η φωνή δεν γράφει "#", οπότε το "ετικέτα ψώνια" γίνεται "#ψώνια"
+const spokenTags = s => s.replace(/(^|\s)(?:ετικ[έε]τα|tag)\s+([\p{L}\p{N}_]+)/giu, (_, sp, w) => `${sp}#${w.toLowerCase()}`);
+const tagsOf = s => [...new Set([...s.matchAll(TAG_RE)].map(m => m[1].toLowerCase()))];
+const withTags = s => esc(s).replace(TAG_RE, '<span class="tag">$&</span>');
+
+/* ---------- Λίστες ---------- */
+// "γάλα, ψωμί και αυγά" → ["γάλα", "ψωμί", "αυγά"]
+function splitItems(text){
+  const parts = text.includes('\n') ? text.split('\n') : text.split(/\s*[,;·]\s*|\s+και\s+/i);
+  return parts.map(s => s.trim().replace(/^[-•*]\s*/, '')).filter(Boolean);
+}
+function noteText(n){ return n.items ? n.items.map(i => i.t).join('\n') : n.text; }
+
+/* ---------- Εμφάνιση ---------- */
+function noteHtml(n){
+  const body = n.items
+    ? `<ul class="items">${n.items.map((it, i) => `<li class="${it.done ? 'done' : ''}" data-i="${i}"><button class="check" aria-label="Τσεκάρισμα"></button><span>${withTags(it.t)}</span></li>`).join('')}</ul>
+       <div class="progress">${n.items.filter(i => i.done).length}/${n.items.length}</div>`
+    : `<p>${withTags(n.text)}</p>`;
+  return `<div class="note${n.pinned ? ' pinned' : ''}" data-id="${n.id}">${body}
+    <div class="meta"><time>${fmt.format(n.updated)}</time>
+      <button class="act${n.pinned ? ' on' : ''}" data-act="pin" aria-label="Καρφίτσωμα">${ICON.pin}</button>
+      <button class="act${n.items ? ' on' : ''}" data-act="list" aria-label="Λίστα ελέγχου">${ICON.list}</button>
+      <button class="act" data-act="del" aria-label="Διαγραφή">${ICON.del}</button>
+    </div></div>`;
 }
 
-function autosize(){ draft.style.height = 'auto'; draft.style.height = Math.min(draft.scrollHeight, innerHeight * .4) + 'px'; save.disabled = !draft.value.trim(); }
+function render(){
+  const counts = {};
+  notes.forEach(n => tagsOf(noteText(n)).forEach(t => counts[t] = (counts[t] || 0) + 1));
+  if (activeTag && !counts[activeTag]) activeTag = null;
+  chips.innerHTML = Object.keys(counts).sort((a,b) => counts[b] - counts[a] || a.localeCompare(b, 'el'))
+    .map(t => `<button class="chip${t === activeTag ? ' on' : ''}" data-tag="${esc(t)}">#${esc(t)} ${counts[t]}</button>`).join('');
 
-function resetComposer(){ editingId = null; draft.value = ''; document.body.classList.remove('editing'); save.textContent = 'Αποθήκευση'; autosize(); }
+  const q = norm(search.value.trim());
+  const shown = notes
+    .filter(n => !q || norm(noteText(n)).includes(q))
+    .filter(n => !activeTag || tagsOf(noteText(n)).includes(activeTag))
+    .sort((a,b) => b.updated - a.updated);
+  const pinned = shown.filter(n => n.pinned), rest = shown.filter(n => !n.pinned);
+
+  if (!shown.length) { list.innerHTML = `<div class="empty">${q || activeTag ? 'Δεν βρέθηκε τίποτα' : 'Καμία σημείωση ακόμα'}</div>`; return; }
+  list.innerHTML = pinned.length
+    ? `<div class="section">Καρφιτσωμένες</div>${pinned.map(noteHtml).join('')}${rest.length ? `<div class="section">Υπόλοιπες</div>${rest.map(noteHtml).join('')}` : ''}`
+    : rest.map(noteHtml).join('');
+}
+
+/* ---------- Σύνθεση ---------- */
+function autosize(){ draft.style.height = 'auto'; draft.style.height = Math.min(draft.scrollHeight, innerHeight * .4) + 'px'; save.disabled = !draft.value.trim(); }
+function setListMode(v){ listMode = v; listModeBtn.classList.toggle('on', v); listModeBtn.setAttribute('aria-pressed', v); }
+function resetComposer(){ editingId = null; draft.value = ''; setListMode(false); document.body.classList.remove('editing'); save.textContent = 'Αποθήκευση'; autosize(); }
+
+listModeBtn.onclick = () => setListMode(!listMode);
 
 save.onclick = () => {
   stopListening();
-  const text = draft.value.trim();
+  let text = spokenTags(draft.value.trim());
   if (!text) return;
   const now = Date.now();
-  if (editingId) {
-    const n = notes.find(n => n.id === editingId);
-    if (n) { n.text = text; n.updated = now; }
-  } else {
-    notes.push({ id: crypto.randomUUID?.() || String(now), text, created: now, updated: now });
+  const n = editingId ? notes.find(n => n.id === editingId) : null;
+  let items = null;
+  if (listMode) {
+    const old = new Map((n?.items || []).map(i => [norm(i.t), i.done]));
+    items = splitItems(text).map(t => ({ t, done: old.get(norm(t)) || false }));
   }
+  if (n) { n.text = text; n.items = items; n.updated = now; }
+  else notes.push({ id: crypto.randomUUID?.() || String(now), text, items, pinned: false, created: now, updated: now });
   persist(); resetComposer(); render();
 };
 
 $('cancel').onclick = () => { stopListening(); resetComposer(); };
 
+/* ---------- Ενέργειες σε σημειώσεις ---------- */
 list.onclick = e => {
   const el = e.target.closest('.note'); if (!el) return;
-  const id = el.dataset.id;
-  if (e.target.classList.contains('del')) {
-    if (confirm('Διαγραφή σημείωσης;')) { notes = notes.filter(n => n.id !== id); persist(); if (editingId === id) resetComposer(); render(); }
-    return;
+  const n = notes.find(n => n.id === el.dataset.id); if (!n) return;
+
+  const li = e.target.closest('.items li');
+  if (li) { const it = n.items[+li.dataset.i]; it.done = !it.done; persist(); render(); return; }
+
+  const act = e.target.closest('.act')?.dataset.act;
+  if (act === 'pin') { n.pinned = !n.pinned; persist(); render(); return; }
+  if (act === 'list') {
+    if (n.items) { n.text = n.items.map(i => i.t).join('\n'); n.items = null; }
+    else n.items = splitItems(n.text).map(t => ({ t, done: false }));
+    persist(); render(); return;
   }
-  const n = notes.find(n => n.id === id); if (!n) return;
-  editingId = id; draft.value = n.text; document.body.classList.add('editing'); save.textContent = 'Ενημέρωση';
+  if (act === 'del') { removeNote(n); return; }
+  if (e.target.closest('.meta')) return;
+
+  editingId = n.id; draft.value = noteText(n); setListMode(!!n.items);
+  document.body.classList.add('editing'); save.textContent = 'Ενημέρωση';
   autosize(); draft.focus();
+};
+
+function removeNote(n){
+  const idx = notes.indexOf(n);
+  notes.splice(idx, 1); persist();
+  if (editingId === n.id) resetComposer();
+  render();
+  toast('Η σημείωση διαγράφηκε', () => { notes.splice(Math.min(idx, notes.length), 0, n); persist(); render(); }, 5000);
+}
+
+chips.onclick = e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  activeTag = activeTag === c.dataset.tag ? null : c.dataset.tag;
+  render();
 };
 
 draft.oninput = autosize;
@@ -128,7 +238,10 @@ search.oninput = render;
 
 $('export').onclick = async () => {
   if (!notes.length) return toast('Δεν υπάρχουν σημειώσεις');
-  const text = [...notes].sort((a,b) => b.updated - a.updated).map(n => `[${fmt.format(n.updated)}]\n${n.text}`).join('\n\n');
+  const text = [...notes].sort((a,b) => b.updated - a.updated).map(n => {
+    const body = n.items ? n.items.map(i => `${i.done ? '☑' : '☐'} ${i.t}`).join('\n') : n.text;
+    return `${n.pinned ? '📌 ' : ''}[${fmt.format(n.updated)}]\n${body}`;
+  }).join('\n\n');
   try {
     if (navigator.share) await navigator.share({ title: 'Σημειώσεις', text });
     else { await navigator.clipboard.writeText(text); toast('Αντιγράφηκαν στο πρόχειρο'); }
@@ -141,7 +254,7 @@ let rec = null, listening = false;
 
 function startListening(){
   if (!SR) { fallback(); return; }
-  const base = draft.value.trim() ? draft.value.trimEnd() + ' ' : '';
+  const base = draft.value.trim() ? draft.value.trimEnd() + (listMode ? ', ' : ' ') : '';
   rec = new SR();
   rec.lang = 'el-GR';
   rec.continuous = true;
@@ -164,8 +277,17 @@ function fallback(){ setListening(false); draft.focus(); toast('Πάτα το �
 
 mic.onclick = () => listening ? stopListening() : startListening();
 
-let tt;
-function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2800); }
+/* ---------- Toast με αναίρεση ---------- */
+let tt, toastAction = null;
+function toast(msg, action, ms = 2800){
+  const t = $('toast');
+  $('toastMsg').textContent = msg;
+  toastAction = action || null;
+  t.classList.toggle('has-action', !!action);
+  t.classList.add('show');
+  clearTimeout(tt); tt = setTimeout(() => { t.classList.remove('show'); toastAction = null; }, ms);
+}
+$('toastBtn').onclick = () => { const a = toastAction; toastAction = null; clearTimeout(tt); $('toast').classList.remove('show'); a?.(); };
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 render(); autosize();
